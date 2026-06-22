@@ -1,18 +1,18 @@
-import { Button } from "@/components/ui/button"
+import { Toaster } from "sonner"
+import Routes from "./routes/Routes"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 
 export function App() {
+    const [queryClient] = useState(() => new QueryClient());
+
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you..dfgdfd</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-       
-      </div>
-    </div>
+    <>
+      <Toaster position="bottom-right" theme="dark" closeButton richColors />
+    <QueryClientProvider client={queryClient}>
+      <Routes />
+      </QueryClientProvider>
+    </>
   )
 }
 
