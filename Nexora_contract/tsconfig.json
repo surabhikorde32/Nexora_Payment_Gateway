@@ -3,6 +3,7 @@
     "target": "es2020",
     "module": "commonjs",
     "rootDir": ".",
+    "types": ["node", "mocha"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
