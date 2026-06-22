@@ -1,7 +1,7 @@
 import express from "express";
 import type { Request, Response } from "express";
-import { connectDB } from "./src/config/connetDatabase.js";
-// import authRoutes from "./src/features/user/auth.routes.js";
+import { dbConnection } from "./src/config/Dbconfig.js";
+import userRoutes from "./src/features/user/user.routes.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./src/config/swagger.js";
 import { errorHandler, notFound } from "./src/middleware/error.middleware.js";
@@ -12,7 +12,7 @@ import dotenv from "dotenv";
 
 const app = express();
 dotenv.config();
-connectDB();
+dbConnection();
 // app.set("trust proxy", 1);
 // app.disable("x-powered-by");
 
@@ -48,7 +48,7 @@ app.get("/api-docs.json", (req: Request, res: Response) => {
   res.send(swaggerSpec);
 });
 
-// app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
@@ -68,3 +68,5 @@ process.on("unhandledRejection", (err) => {
 });
 
 export default app;
+
+
