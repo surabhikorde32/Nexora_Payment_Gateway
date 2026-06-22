@@ -5,8 +5,14 @@ import { api } from "@/lib/api"
 
 export interface User {
   id: string
-  name: string
+  full_name: string
   email: string
+  publicKey?: string | null
+}
+
+type AuthResponse = {
+  success?: boolean
+  user: User
 }
 
 // Runtime auth state - never stored in localStorage
@@ -70,14 +76,17 @@ export const authService = {
    */
   async getCurrentUser(): Promise<User | null> {
     try {
-      const user = await api.get<User>("users/me")
+      const response = await api.get<AuthResponse>("users/me")
+      const user = response.user
+
       if (user) {
         _isAuthenticated = true
         _currentUser = user
         _sessionChecked = true
         this.notifyListeners()
       }
-      return user
+
+      return user ?? null
     } catch (err) {
       _isAuthenticated = false
       _currentUser = null
@@ -91,7 +100,7 @@ export const authService = {
    * Log in user
    */
   async login(data: { email: string; password: string }): Promise<User> {
-    const response = await api.post<{ user: User }>("users/login", data)
+    const response = await api.post<AuthResponse>("users/login", data)
     if (response.user) {
       _isAuthenticated = true
       _currentUser = response.user
@@ -111,7 +120,7 @@ export const authService = {
     private_key: string
     public_key: string
   }): Promise<User> {
-    const response = await api.post<{ user: User }>("users/register", data)
+    const response = await api.post<AuthResponse>("users/register", data)
     if (response.user) {
       _isAuthenticated = true
       _currentUser = response.user

@@ -66,7 +66,7 @@ export function Header() {
 
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-xs font-semibold text-emerald-400 select-none">
-              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+              {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
             </div>
             <Button 
               variant="ghost" 

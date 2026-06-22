@@ -6,7 +6,9 @@ import { useEffect, useState } from "react"
 import { authService } from "@/services/authService"
 
 export function Layout() {
-  const [isAuthenticated, setIsAuthenticated] = useState(authService.isAuthenticated())
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    authService.isAuthenticated()
+  )
   const [isLoading, setIsLoading] = useState(!authService.isSessionChecked())
 
   useEffect(() => {
@@ -34,18 +36,18 @@ export function Layout() {
     )
   }
 
-//   if (!isAuthenticated) {
-//     return <Navigate to="/login" replace />
-//   }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-neutral-950">
+    <div className="flex min-h-screen flex-col bg-neutral-950 font-sans text-neutral-100 selection:bg-emerald-500 selection:text-neutral-950">
       {/* Glowing background highlights */}
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] rounded-full bg-emerald-500/5 blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] rounded-full bg-blue-500/5 blur-[150px] pointer-events-none" />
-      
+      <div className="pointer-events-none absolute top-0 right-1/4 h-[500px] w-[500px] rounded-full bg-emerald-500/5 blur-[150px]" />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[500px] w-[500px] rounded-full bg-blue-500/5 blur-[150px]" />
+
       <Header />
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 z-10">
+      <main className="z-10 mx-auto w-full max-w-7xl flex-1 space-y-8 px-4 py-8 sm:px-6 lg:px-8">
         <Outlet /> {/* This renders the nested route components */}
       </main>
       <Footer />
