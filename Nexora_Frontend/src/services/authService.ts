@@ -12,7 +12,22 @@ export interface User {
 
 type AuthResponse = {
   success?: boolean
-  user: User
+  user?: User
+}
+
+const isUser = (value: unknown): value is User => {
+  if (!value || typeof value !== "object") return false
+
+  const user = value as Partial<User>
+  return Boolean(user.id && user.full_name && user.email)
+}
+
+const getUserFromResponse = (response: AuthResponse | User): User | null => {
+  if ("user" in response) {
+    return isUser(response.user) ? response.user : null
+  }
+
+  return isUser(response) ? response : null
 }
 
 // Runtime auth state - never stored in localStorage
@@ -76,12 +91,19 @@ export const authService = {
    */
   async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await api.get<AuthResponse>("users/me")
-      const user = response.user
+      const response = await api.get<AuthResponse | User>("users/me")
+      const user = getUserFromResponse(response)
 
       if (user) {
         _isAuthenticated = true
         _currentUser = user
+        _sessionChecked = true
+        this.notifyListeners()
+      }
+
+      if (!user) {
+        _isAuthenticated = false
+        _currentUser = null
         _sessionChecked = true
         this.notifyListeners()
       }
@@ -101,13 +123,18 @@ export const authService = {
    */
   async login(data: { email: string; password: string }): Promise<User> {
     const response = await api.post<AuthResponse>("users/login", data)
-    if (response.user) {
-      _isAuthenticated = true
-      _currentUser = response.user
-      _sessionChecked = true
-      this.notifyListeners()
+    const user = getUserFromResponse(response)
+
+    if (!user) {
+      throw new Error("Login response did not include user")
     }
-    return response.user
+
+    _isAuthenticated = true
+    _currentUser = user
+    _sessionChecked = true
+    this.notifyListeners()
+
+    return user
   },
 
   /**
@@ -121,13 +148,18 @@ export const authService = {
     public_key: string
   }): Promise<User> {
     const response = await api.post<AuthResponse>("users/register", data)
-    if (response.user) {
-      _isAuthenticated = true
-      _currentUser = response.user
-      _sessionChecked = true
-      this.notifyListeners()
+    const user = getUserFromResponse(response)
+
+    if (!user) {
+      throw new Error("Signup response did not include user")
     }
-    return response.user
+
+    _isAuthenticated = true
+    _currentUser = user
+    _sessionChecked = true
+    this.notifyListeners()
+
+    return user
   },
 
   /**
@@ -165,3 +197,6 @@ export const authService = {
     this.notifyListeners()
   }
 }
+
+
+

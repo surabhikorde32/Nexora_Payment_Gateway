@@ -12,20 +12,24 @@ export function Layout() {
   const [isLoading, setIsLoading] = useState(!authService.isSessionChecked())
 
   useEffect(() => {
-    // Listen to auth changes
-    const unsubscribe = authService.addListener((auth, user) => {
+    let isMounted = true
+
+    const unsubscribe = authService.addListener((auth) => {
+      if (!isMounted) return
+      setIsAuthenticated(auth)
+      setIsLoading(!authService.isSessionChecked())
+    })
+
+    authService.initializeSession().then((auth) => {
+      if (!isMounted) return
       setIsAuthenticated(auth)
       setIsLoading(false)
     })
 
-    // Initialize session if needed
-    if (!authService.isSessionChecked()) {
-      authService.initializeSession().finally(() => {
-        setIsLoading(false)
-      })
+    return () => {
+      isMounted = false
+      unsubscribe()
     }
-
-    return unsubscribe
   }, [])
 
   if (isLoading) {
