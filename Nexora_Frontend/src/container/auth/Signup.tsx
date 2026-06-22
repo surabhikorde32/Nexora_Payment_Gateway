@@ -41,7 +41,7 @@ export function Signup() {
   const loginMutation = useMutation({
     mutationFn: (payload: Omit<SignupFormValues, "terms">) =>
       authService.signup(payload),
-    onSuccess: (res) => {
+    onSuccess: () => {
       setTimeout(() => {
         navigate("/dashboard")
       }, 1500)
@@ -322,3 +322,4 @@ export function Signup() {
     </div>
   )
 }
+

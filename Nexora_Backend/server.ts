@@ -16,7 +16,10 @@ dbConnection();
 // app.set("trust proxy", 1);
 // app.disable("x-powered-by");
 
-const ALLOWED_ORIGINS = [process.env.FRONTEND_URL];
+const ALLOWED_ORIGINS = (process.env.FRONTEND_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(
   cors({
@@ -68,5 +71,6 @@ process.on("unhandledRejection", (err) => {
 });
 
 export default app;
+
 
 

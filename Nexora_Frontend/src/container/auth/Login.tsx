@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/card"
 import { authService } from "@/services/authService"
 import { Formik, Form, Field, ErrorMessage } from "formik"
-import * as Yup from "yup"
 import { useMutation } from "@tanstack/react-query"
 import { LoginSchema } from "@/validations/validation"
 
@@ -35,7 +34,7 @@ export function Login() {
   const loginMutation = useMutation({
     mutationFn: (payload: { email: string; password: string }) =>
       authService.login(payload),
-    onSuccess: (res) => {
+    onSuccess: () => {
       setTimeout(() => {
         navigate("/dashboard")
       }, 1500)
@@ -233,3 +232,5 @@ export function Login() {
     </div>
   )
 }
+
+

@@ -11,15 +11,15 @@ export function Layout() {
 
   useEffect(() => {
     // Listen to auth changes
-    const unsubscribe = authService.addListener((auth, user) => {
+    const unsubscribe = authService.addListener((auth) => {
       setIsAuthenticated(auth)
-      setIsLoading(false)
+      setIsLoading(!authService.isSessionChecked())
     })
 
     // Initialize session if needed
     if (!authService.isSessionChecked()) {
       authService.initializeSession().finally(() => {
-        setIsLoading(false)
+        setIsLoading(!authService.isSessionChecked())
       })
     }
 
@@ -34,9 +34,9 @@ export function Layout() {
     )
   }
 
-//   if (!isAuthenticated) {
-//     return <Navigate to="/login" replace />
-//   }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-neutral-950">
@@ -52,3 +52,5 @@ export function Layout() {
     </div>
   )
 }
+
+
