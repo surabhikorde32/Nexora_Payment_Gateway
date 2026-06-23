@@ -139,33 +139,32 @@ export const authService = {
   },
 
   /**
-   * Sign up user
+   * Sign up user — returns user + mnemonic for display
    */
   async signup(data: {
     full_name: string
     email: string
     password: string
-
-  }): Promise<User> {
+  }): Promise<{ user: User; mnemonic: string }> {
 
     const wallet = await generateWallet();
-    const encryptedPrivateKey = await encryptPrivateKey(
-      wallet.privateKey,
-      data.password
-    );
-    const response = await api.post<AuthResponse>("users/register", { ...data, private_key: encryptedPrivateKey, public_key: wallet.publicKey, wallet_address: wallet.address })
-    const user = getUserFromResponse(response)
+    const encryptedPrivateKey = await encryptPrivateKey(wallet.privateKey, data.password);
+    const response = await api.post<AuthResponse>("users/register", {
+      ...data,
+      private_key: encryptedPrivateKey,
+      public_key: wallet.publicKey,
+      wallet_address: wallet.address,
+    });
+    const user = getUserFromResponse(response);
 
-    if (!user) {
-      throw new Error("Signup response did not include user")
-    }
+    if (!user) throw new Error("Signup response did not include user");
 
-    _isAuthenticated = true
-    _currentUser = user
-    _sessionChecked = true
-    this.notifyListeners()
+    _isAuthenticated = true;
+    _currentUser = user;
+    _sessionChecked = true;
+    this.notifyListeners();
 
-    return user
+    return { user, mnemonic: wallet.mnemonic ?? "" };
   },
 
   /**

@@ -9,6 +9,9 @@ import {
   CreditCard,
   ArrowRight,
   Check,
+  ShieldAlert,
+  Copy,
+  CheckCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -30,28 +33,41 @@ interface SignupFormValues {
   email: string
   password: string
   terms: boolean
-
 }
+
+type Step = "form" | "mnemonic" | "success"
 
 export function Signup() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = React.useState(false)
+  const [step, setStep] = React.useState<Step>("form")
+  const [mnemonic, setMnemonic] = React.useState("")
+  const [copied, setCopied] = React.useState(false)
 
-  const loginMutation = useMutation({
+  const signupMutation = useMutation({
     mutationFn: (payload: Omit<SignupFormValues, "terms">) =>
       authService.signup(payload),
-    onSuccess: () => {
-      setTimeout(() => {
-        navigate("/dashboard")
-      }, 1500)
+    onSuccess: ({ mnemonic: phrase }) => {
+      setMnemonic(phrase)
+      setStep("mnemonic")
     },
     onError: () => {},
   })
 
   const handleSubmit = async (values: SignupFormValues) => {
-    // Destructure terms and pass the rest as payload
     const { terms, ...payload } = values
-    await loginMutation.mutateAsync(payload)
+    await signupMutation.mutateAsync(payload)
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(mnemonic)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleMnemonicConfirm = () => {
+    setStep("success")
+    setTimeout(() => navigate("/dashboard"), 1500)
   }
 
   return (
@@ -90,27 +106,60 @@ export function Signup() {
           </CardHeader>
 
           <CardContent className="pt-2">
-            {loginMutation?.isSuccess ? (
-              <div className="animate-fade-in flex flex-col items-center justify-center space-y-4 py-8 text-center">
+            {/* ── Step: success ── */}
+            {step === "success" && (
+              <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
                 <div className="flex h-16 w-16 animate-bounce items-center justify-center rounded-full border border-emerald-500/50 bg-emerald-500/20 text-emerald-400">
                   <Check className="h-8 w-8" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-semibold text-white">
-                    Registration Successful!
-                  </h3>
-                  <p className="text-sm text-neutral-400">
-                    Welcome aboard. Redirecting to your dashboard...
-                  </p>
+                  <h3 className="text-lg font-semibold text-white">Registration Successful!</h3>
+                  <p className="text-sm text-neutral-400">Welcome aboard. Redirecting to your dashboard...</p>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {/* ── Step: mnemonic modal ── */}
+            {step === "mnemonic" && (
+              <div className="flex flex-col space-y-4 py-2">
+                <div className="flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-300">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  <span>Save these 12 words in order. They are the <strong>only way</strong> to recover your wallet.</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {mnemonic.split(" ").map((word, i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-md border border-neutral-700 bg-neutral-800/60 px-2 py-1.5 text-sm">
+                      <span className="w-4 text-right text-xs text-neutral-500">{i + 1}.</span>
+                      <span className="font-mono text-neutral-100">{word}</span>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCopy}
+                  className="flex items-center gap-2 border-neutral-700 text-neutral-300 hover:text-white"
+                >
+                  {copied ? <CheckCheck className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "Copied!" : "Copy to clipboard"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleMnemonicConfirm}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 font-semibold text-neutral-950 hover:from-emerald-400 hover:to-teal-400"
+                >
+                  I've saved my recovery phrase
+                </Button>
+              </div>
+            )}
+
+            {/* ── Step: form ── */}
+            {step === "form" && (
               <Formik
                 initialValues={{
                   full_name: "",
                   email: "",
                   password: "",
-               
                   terms: false,
                 }}
                 validationSchema={SignupSchema}
@@ -141,7 +190,7 @@ export function Signup() {
                           name="full_name"
                           type="text"
                           placeholder="John Doe"
-                          disabled={loginMutation?.isPending}
+                          disabled={signupMutation?.isPending}
                           onChange={handleChange}
                           onBlur={handleBlur}
                           value={values.full_name}
@@ -174,7 +223,7 @@ export function Signup() {
                           name="email"
                           type="email"
                           placeholder="name@example.com"
-                          disabled={loginMutation?.isPending}
+                          disabled={signupMutation?.isPending}
                           onChange={handleChange}
                           onBlur={handleBlur}
                           value={values.email}
@@ -209,7 +258,7 @@ export function Signup() {
                           name="password"
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
-                          disabled={loginMutation?.isPending}
+                          disabled={signupMutation?.isPending}
                           onChange={handleChange}
                           onBlur={handleBlur}
                           value={values.password}
@@ -222,7 +271,7 @@ export function Signup() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          disabled={loginMutation?.isPending}
+                          disabled={signupMutation?.isPending}
                           className="absolute top-1/2 right-3 -translate-y-1/2 text-neutral-500 transition-colors hover:text-neutral-300 focus:outline-hidden"
                         >
                           {showPassword ? (
@@ -246,7 +295,7 @@ export function Signup() {
                           type="checkbox"
                           id="terms"
                           name="terms"
-                          disabled={loginMutation?.isPending}
+                          disabled={signupMutation?.isPending}
                           onChange={handleChange}
                           onBlur={handleBlur}
                           checked={values.terms}
@@ -286,10 +335,10 @@ export function Signup() {
                     {/* Submit Button */}
                     <Button
                       type="submit"
-                      disabled={loginMutation?.isPending}
+                      disabled={signupMutation?.isPending}
                       className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 py-2.5 font-semibold text-neutral-950 shadow-lg transition-all duration-300 hover:scale-[1.01] hover:from-emerald-400 hover:to-teal-400 hover:shadow-emerald-500/10 active:scale-[0.99]"
                     >
-                      {loginMutation?.isPending ? (
+                      {signupMutation?.isPending ? (
                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-950 border-t-transparent" />
                       ) : (
                         <>
@@ -307,13 +356,11 @@ export function Signup() {
           <CardFooter className="flex flex-col space-y-4 border-t border-neutral-800/40 bg-neutral-950/20 py-4 text-center">
             <p className="text-sm text-neutral-400">
               Already have an account?{" "}
-              <Link
-                to="/login"
-                className="font-medium text-emerald-400 hover:underline"
-              >
+              <Link to="/login" className="font-medium text-emerald-400 hover:underline">
                 Sign in
               </Link>
             </p>
+        
           </CardFooter>
         </Card>
       </div>

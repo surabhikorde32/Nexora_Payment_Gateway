@@ -154,12 +154,12 @@ export function Login() {
                         >
                           Password
                         </Label>
-                        <a
+                        {/* <a
                           href="#"
                           className="text-xs text-emerald-400 hover:underline"
                         >
                           Forgot Password?
-                        </a>
+                        </a> */}
                       </div>
                       <div className="relative">
                         <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-500" />
@@ -224,6 +224,12 @@ export function Login() {
                 className="font-medium text-emerald-400 hover:underline"
               >
                 Create one now
+              </Link>
+            </p>
+                <p className="text-sm text-neutral-400">
+              Forgot password?{" "}
+              <Link to="/recover" className="font-medium text-emerald-400 hover:underline">
+                Recover with mnemonic
               </Link>
             </p>
           </CardFooter>

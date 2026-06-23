@@ -1,7 +1,7 @@
 import { Toaster } from "sonner"
-import Routes from "./routes/Routes"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { Routes } from "./routes/Routes";
 
 export function App() {
     const [queryClient] = useState(() => new QueryClient());
