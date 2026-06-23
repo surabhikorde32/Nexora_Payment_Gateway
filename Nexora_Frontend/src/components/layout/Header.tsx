@@ -12,15 +12,12 @@ import { authService, type User } from "@/services/authService"
 
 export function Header() {
   const navigate = useNavigate()
-  const [user, setUser] = React.useState<User | null>(null)
+  const [user, setUser] = React.useState<User | null>(authService.getCurrentUserSync())
 
   React.useEffect(() => {
-    const fetchCurrentUser = async () => {
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
-    }
-
-    fetchCurrentUser()
+    return authService.addListener((_auth, user) => {
+      setUser(user)
+    })
   }, [])
 
   const handleLogout = async () => {
@@ -33,7 +30,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <CreditCard className="h-4.5 w-4.5 text-neutral-950 font-bold" />
+            <CreditCard className="h-4.5 w-4.5 text-neutral-950" />
           </div>
           <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
             Nexora
