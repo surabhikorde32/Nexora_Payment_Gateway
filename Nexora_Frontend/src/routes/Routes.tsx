@@ -23,7 +23,6 @@
 
 // export default Routes
 
-// src/Routes.tsx
 import {
   BrowserRouter,
   Routes as RouterRoutes,
@@ -33,7 +32,7 @@ import {
 import { Signup } from "@/container/auth/Signup"
 import { Login } from "@/container/auth/Login"
 import { Dashboard } from "@/container/pages/Dashboard"
-
+import { RecoverPassword } from "@/container/auth/RecoverPassword"
 import { Layout } from "@/components/layout/Layout"
 
 export function Routes() {
@@ -42,6 +41,7 @@ export function Routes() {
       <RouterRoutes>
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/recover" element={<RecoverPassword />} />
 
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -52,5 +52,3 @@ export function Routes() {
     </BrowserRouter>
   )
 }
-
-export default Routes

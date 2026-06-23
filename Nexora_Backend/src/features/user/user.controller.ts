@@ -1,16 +1,13 @@
 import bcrypt from "bcryptjs";
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../middleware/error.middleware.js";
-import { createWallet } from "../wallet/wallet.model.js";
 import { clearAuthCookie, setAuthCookie } from "../../utils/cookieUtils.js";
 import { generateToken, verifyToken } from "../../utils/jwtToken.js";
-import { createUser, findUserByEmail, findUserById } from "./user.model.js";
+import { createWallet, findWalletByUserId, updateWalletForUser } from "../wallet/wallet.model.js";
+import { createUser, findUserByEmail, findUserById, updateUserRecoveryCredentials } from "./user.model.js";
 import { serializeUser } from "./user.types.js";
 
-type RegisterBody = {
-  full_name?: string;
-  email?: string;
-  password?: string;
+type WalletBody = {
   publicKey?: string;
   publickey?: string;
   public_key?: string;
@@ -22,22 +19,36 @@ type RegisterBody = {
   wallet_address?: string;
 };
 
+type RegisterBody = WalletBody & {
+  full_name?: string;
+  email?: string;
+  password?: string;
+};
+
 type LoginBody = {
+  email?: string;
+  password?: string;
+};
+
+type RecoverBody = WalletBody & {
   email?: string;
   password?: string;
 };
 
 const USER_TOKEN_COOKIE = "userToken";
 
+const getWalletFields = (body: WalletBody) => ({
+  publicKey: body.publicKey ?? body.publickey ?? body.public_key ?? null,
+  privateKey: body.privateKey ?? body.privatekey ?? body.private_key ?? null,
+  walletAddress: body.walletAddress ?? body.walletaddress ?? body.wallet_address ?? null,
+});
+
 const getAuthToken = (req: Request) => {
   let token: string | undefined;
 
-  // Prefer HttpOnly cookie; fall back to Authorization header for non-browser clients
   if (req.cookies && req.cookies[USER_TOKEN_COOKIE]) {
-    console.log("Token from cookie:", req.cookies[USER_TOKEN_COOKIE]); // Debugging line
     token = req.cookies[USER_TOKEN_COOKIE];
   } else if (req.headers.authorization?.startsWith("Bearer ")) {
-    console.log("Token from header:", req.headers.authorization); // Debugging line
     token = req.headers.authorization.split(" ")[1];
   }
 
@@ -51,9 +62,7 @@ export const registerUser = async (
 ) => {
   try {
     const { full_name, email, password } = req.body;
-    const publicKey = req.body.publicKey ?? req.body.publickey ?? req.body.public_key ?? null;
-    const privateKey = req.body.privateKey ?? req.body.privatekey ?? req.body.private_key ?? null;
-    const walletAddress = req.body.walletAddress ?? req.body.walletaddress ?? req.body.wallet_address ?? null;
+    const { publicKey, privateKey, walletAddress } = getWalletFields(req.body);
 
     if (!full_name || !email || !password) {
       throw new AppError("full_name, email, and password are required", 400);
@@ -133,6 +142,67 @@ export const loginUser = async (
   }
 };
 
+export const recoverUser = async (
+  req: Request<object, object, RecoverBody>,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { email, password } = req.body;
+    const { publicKey, privateKey, walletAddress } = getWalletFields(req.body);
+
+    if (!email || !password || !publicKey || !privateKey || !walletAddress) {
+      throw new AppError("email, password, public_key, private_key, and wallet_address are required", 400);
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await findUserByEmail(normalizedEmail);
+
+    if (!user) {
+      throw new AppError("Recovery details are invalid", 401);
+    }
+
+    const wallet = await findWalletByUserId(user.id);
+    const registeredWalletAddress = wallet?.wallet_address ?? null;
+
+    if (!registeredWalletAddress) {
+      throw new AppError("No recovery wallet is registered for this account", 400);
+    }
+
+    if (registeredWalletAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      throw new AppError("Recovery details are invalid", 401);
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const updatedUser = await updateUserRecoveryCredentials({
+      id: user.id,
+      passwordHash,
+      publicKey,
+      privateKey,
+    });
+
+    await updateWalletForUser({
+      userId: user.id,
+      walletAddress,
+      publicKey,
+      privateKey,
+    });
+
+    if (!updatedUser) {
+      throw new AppError("Unable to recover account", 500);
+    }
+    res.json({
+      success: true,
+      message: "Account recovered successfully. Please login with your new password.",
+      user: serializeUser(updatedUser),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const logoutUser = (req: Request, res: Response) => {
   clearAuthCookie(res, USER_TOKEN_COOKIE);
 
@@ -141,10 +211,10 @@ export const logoutUser = (req: Request, res: Response) => {
     message: "Logout successful",
   });
 };
+
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = getAuthToken(req);
-    console.log("Token from request:", token); // Debugging line
 
     if (!token) {
       throw new AppError("Not authorized. Please login.", 401);
@@ -154,7 +224,7 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
 
     try {
       decoded = verifyToken(token) as { id?: string };
-    } catch (error) {
+    } catch {
       throw new AppError("Invalid or expired token. Please login again.", 401);
     }
 
@@ -176,9 +246,4 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
-
-
-
-
-
 
