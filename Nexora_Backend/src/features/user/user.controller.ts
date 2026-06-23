@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../middleware/error.middleware.js";
+import { createWallet } from "../wallet/wallet.model.js";
 import { clearAuthCookie, setAuthCookie } from "../../utils/cookieUtils.js";
 import { generateToken, verifyToken } from "../../utils/jwtToken.js";
 import { createUser, findUserByEmail, findUserById } from "./user.model.js";
@@ -16,6 +17,9 @@ type RegisterBody = {
   privateKey?: string;
   privatekey?: string;
   private_key?: string;
+  walletAddress?: string;
+  walletaddress?: string;
+  wallet_address?: string;
 };
 
 type LoginBody = {
@@ -49,6 +53,7 @@ export const registerUser = async (
     const { full_name, email, password } = req.body;
     const publicKey = req.body.publicKey ?? req.body.publickey ?? req.body.public_key ?? null;
     const privateKey = req.body.privateKey ?? req.body.privatekey ?? req.body.private_key ?? null;
+    const walletAddress = req.body.walletAddress ?? req.body.walletaddress ?? req.body.wallet_address ?? null;
 
     if (!full_name || !email || !password) {
       throw new AppError("full_name, email, and password are required", 400);
@@ -71,6 +76,15 @@ export const registerUser = async (
       publicKey,
       privateKey,
     });
+
+    if (walletAddress || publicKey || privateKey) {
+      await createWallet({
+        userId: user.id,
+        walletAddress,
+        publicKey,
+        privateKey,
+      });
+    }
 
     const token = generateToken(String(user.id));
     setAuthCookie(res, USER_TOKEN_COOKIE, token);
@@ -162,6 +176,9 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+
+
 
 
 
