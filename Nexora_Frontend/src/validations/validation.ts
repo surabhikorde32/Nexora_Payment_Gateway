@@ -28,6 +28,28 @@ export const SignupSchema = Yup.object().shape({
 })
 
 
+export const RecoverPasswordSchema = Yup.object().shape({
+  email: Yup.string()
+    .required("Email is required")
+    .matches(
+      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      "Please enter a valid email address"
+    ),
+  password: Yup.string()
+    .required("Password is required")
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+      "Password must contain at least one uppercase, one lowercase, one number, and one special character (@$!%*?&)"
+    )
+    .min(8, "Password must be at least 8 characters")
+    .max(12, "Password must be less than 12 characters"),
+  mnemonic: Yup.string()
+    .required("Recovery phrase is required")
+    .test("word-count", "Recovery phrase must be exactly 12 words", (value) =>
+      value ? value.trim().split(/\s+/).filter(Boolean).length === 12 : false
+    ),
+})
+
 export const LoginSchema = Yup.object().shape({
     email: Yup.string()
     .required("Email is required")
