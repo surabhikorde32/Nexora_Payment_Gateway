@@ -62,6 +62,10 @@ export const SendSchema = Yup.object().shape({
   note: Yup.string().max(100, "Note must be less than 100 characters"),
 })
 
+export const SendPasswordSchema = Yup.object().shape({
+  password: Yup.string().required("Password is required to confirm transaction"),
+})
+
 export const LoginSchema = Yup.object().shape({
     email: Yup.string()
     .required("Email is required")

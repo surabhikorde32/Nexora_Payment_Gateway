@@ -14,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { authService } from "@/services/authService"
 import { initializeProvider } from "@/lib/walletUtils"
@@ -140,10 +140,10 @@ export function Dashboard() {
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-emerald-400" : ""}`} />
             Sync Data
           </button>
-          <Button className="cursor-pointer gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-4.5 py-1.5 text-xs font-semibold text-neutral-950 shadow-lg transition-all hover:from-emerald-400 hover:to-teal-400">
+          {/* <Button className="cursor-pointer gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-4.5 py-1.5 text-xs font-semibold text-neutral-950 shadow-lg transition-all hover:from-emerald-400 hover:to-teal-400">
             <Plus className="h-3.5 w-3.5 stroke-[3px]" />
             New Payment Link
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -227,71 +227,71 @@ export function Dashboard() {
                   <Send className="h-4 w-4" />
                   Send
                 </Button>
-                <Button variant="outline" className="gap-2 border-neutral-800 text-neutral-200 hover:bg-neutral-900 hover:text-white">
+                {/* <Button variant="outline" className="gap-2 border-neutral-800 text-neutral-200 hover:bg-neutral-900 hover:text-white">
                   <ArrowDownToLine className="h-4 w-4" />
                   Receive
-                </Button>
+                </Button> */}
               </div>
             </div>
           </div>
+
+          {/* ── Transactions ── */}
+          <div className="overflow-hidden rounded-xl border border-neutral-900 bg-neutral-900/20">
+            <div className="flex items-center justify-between border-b border-neutral-900/60 px-6 py-5">
+              <h3 className="text-lg font-bold text-white">Recent Transactions</h3>
+              <Link to="/transactions" className="text-xs font-semibold text-emerald-400 hover:underline">
+                View all transactions
+              </Link>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-neutral-900 bg-neutral-950/30 text-[11px] font-semibold tracking-wider text-neutral-500 uppercase">
+                    <th className="px-6 py-3.5">Transaction ID</th>
+                    <th className="px-6 py-3.5">Customer</th>
+                    <th className="px-6 py-3.5">Date</th>
+                    <th className="px-6 py-3.5">Amount</th>
+                    <th className="px-6 py-3.5">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-900/40">
+                  {transactions.map((txn) => (
+                    <tr key={txn.id} className="text-sm transition-colors hover:bg-neutral-900/20">
+                      <td className="px-6 py-4 font-mono text-xs text-neutral-400">{txn.id}</td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-white">{txn.customer}</div>
+                        <div className="text-xs text-neutral-500">{txn.email}</div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-neutral-400">{txn.date}</td>
+                      <td className="px-6 py-4">
+                        <span className={`font-semibold ${
+                          txn.type === "charge" ? "text-emerald-400"
+                            : txn.type === "refund" ? "text-amber-400"
+                            : "text-neutral-400"
+                        }`}>
+                          {txn.amount}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${
+                          txn.status === "Successful" ? "border-emerald-500/20 bg-emerald-950/30 text-emerald-400"
+                            : txn.status === "Pending" ? "border-amber-500/20 bg-amber-950/30 text-amber-400"
+                            : "border-red-500/20 bg-red-950/30 text-red-400"
+                        }`}>
+                          {txn.status === "Successful" && <CheckCircle className="h-3 w-3" />}
+                          {txn.status === "Pending" && <Clock className="h-3 w-3" />}
+                          {txn.status === "Failed" && <XCircle className="h-3 w-3" />}
+                          {txn.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
-      </div>
-
-      {/* ── Transactions ── */}
-      <div className="overflow-hidden rounded-xl border border-neutral-900 bg-neutral-900/20">
-        <div className="flex items-center justify-between border-b border-neutral-900/60 px-6 py-5">
-          <h3 className="text-lg font-bold text-white">Recent Transactions</h3>
-          <a href="#" className="text-xs font-semibold text-emerald-400 hover:underline">
-            View all transactions
-          </a>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="border-b border-neutral-900 bg-neutral-950/30 text-[11px] font-semibold tracking-wider text-neutral-500 uppercase">
-                <th className="px-6 py-3.5">Transaction ID</th>
-                <th className="px-6 py-3.5">Customer</th>
-                <th className="px-6 py-3.5">Date</th>
-                <th className="px-6 py-3.5">Amount</th>
-                <th className="px-6 py-3.5">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-900/40">
-              {transactions.map((txn) => (
-                <tr key={txn.id} className="text-sm transition-colors hover:bg-neutral-900/20">
-                  <td className="px-6 py-4 font-mono text-xs text-neutral-400">{txn.id}</td>
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-white">{txn.customer}</div>
-                    <div className="text-xs text-neutral-500">{txn.email}</div>
-                  </td>
-                  <td className="px-6 py-4 text-xs text-neutral-400">{txn.date}</td>
-                  <td className="px-6 py-4">
-                    <span className={`font-semibold ${
-                      txn.type === "charge" ? "text-emerald-400"
-                        : txn.type === "refund" ? "text-amber-400"
-                        : "text-neutral-400"
-                    }`}>
-                      {txn.amount}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${
-                      txn.status === "Successful" ? "border-emerald-500/20 bg-emerald-950/30 text-emerald-400"
-                        : txn.status === "Pending" ? "border-amber-500/20 bg-amber-950/30 text-amber-400"
-                        : "border-red-500/20 bg-red-950/30 text-red-400"
-                    }`}>
-                      {txn.status === "Successful" && <CheckCircle className="h-3 w-3" />}
-                      {txn.status === "Pending" && <Clock className="h-3 w-3" />}
-                      {txn.status === "Failed" && <XCircle className="h-3 w-3" />}
-                      {txn.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   )

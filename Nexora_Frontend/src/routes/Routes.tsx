@@ -35,6 +35,7 @@ import { Dashboard } from "@/container/pages/Dashboard"
 import { RecoverPassword } from "@/container/auth/RecoverPassword"
 import { Layout } from "@/components/layout/Layout"
 import { SendPage } from "@/container/pages/Send"
+import { TransactionsPage } from "@/container/pages/Transactions"
 
 export function Routes() {
   return (
@@ -47,6 +48,7 @@ export function Routes() {
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/send" element={<SendPage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/signup" replace />} />
