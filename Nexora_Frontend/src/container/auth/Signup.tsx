@@ -30,8 +30,7 @@ interface SignupFormValues {
   email: string
   password: string
   terms: boolean
-  private_key: string
-  public_key: string
+
 }
 
 export function Signup() {
@@ -111,8 +110,7 @@ export function Signup() {
                   full_name: "",
                   email: "",
                   password: "",
-                  public_key: "vdvb",
-                  private_key: "ddv",
+               
                   terms: false,
                 }}
                 validationSchema={SignupSchema}

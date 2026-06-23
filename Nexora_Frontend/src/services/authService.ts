@@ -2,6 +2,7 @@
 
 // src/services/authService.ts
 import { api } from "@/lib/api"
+import { encryptPrivateKey, generateWallet } from "@/lib/walletUtils"
 
 export interface User {
   id: string
@@ -144,10 +145,15 @@ export const authService = {
     full_name: string
     email: string
     password: string
-    private_key: string
-    public_key: string
+
   }): Promise<User> {
-    const response = await api.post<AuthResponse>("users/register", data)
+
+    const wallet = await generateWallet();
+    const encryptedPrivateKey = await encryptPrivateKey(
+      wallet.privateKey,
+      data.password
+    );
+    const response = await api.post<AuthResponse>("users/register", { ...data, private_key: encryptedPrivateKey, public_key: wallet.publicKey, wallet_address: wallet.address })
     const user = getUserFromResponse(response)
 
     if (!user) {
