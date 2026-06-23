@@ -82,18 +82,16 @@ export const registerUser = async (
       full_name: full_name.trim(),
       email: normalizedEmail,
       passwordHash,
-      publicKey,
-      privateKey,
     });
 
-    if (walletAddress || publicKey || privateKey) {
-      await createWallet({
-        userId: user.id,
-        walletAddress,
-        publicKey,
-        privateKey,
-      });
-    }
+    const wallet = walletAddress || publicKey || privateKey
+      ? await createWallet({
+          userId: user.id,
+          walletAddress,
+          publicKey,
+          privateKey,
+        })
+      : null;
 
     const token = generateToken(String(user.id));
     setAuthCookie(res, USER_TOKEN_COOKIE, token);
@@ -102,7 +100,7 @@ export const registerUser = async (
       success: true,
       message: "User registered successfully",
       token,
-      user: serializeUser(user),
+      user: serializeUser(user, wallet),
     });
   } catch (error) {
     next(error);
@@ -128,6 +126,7 @@ export const loginUser = async (
       throw new AppError("Invalid email or password", 401);
     }
 
+    const wallet = await findWalletByUserId(user.id);
     const token = generateToken(String(user.id));
     setAuthCookie(res, USER_TOKEN_COOKIE, token);
 
@@ -135,7 +134,7 @@ export const loginUser = async (
       success: true,
       message: "Login successful",
       token,
-      user: serializeUser(user),
+      user: serializeUser(user, wallet),
     });
   } catch (error) {
     next(error);
@@ -179,11 +178,9 @@ export const recoverUser = async (
     const updatedUser = await updateUserRecoveryCredentials({
       id: user.id,
       passwordHash,
-      publicKey,
-      privateKey,
     });
 
-    await updateWalletForUser({
+    const updatedWallet = await updateWalletForUser({
       userId: user.id,
       walletAddress,
       publicKey,
@@ -193,10 +190,11 @@ export const recoverUser = async (
     if (!updatedUser) {
       throw new AppError("Unable to recover account", 500);
     }
+
     res.json({
       success: true,
       message: "Account recovered successfully. Please login with your new password.",
-      user: serializeUser(updatedUser),
+      user: serializeUser(updatedUser, updatedWallet),
     });
   } catch (error) {
     next(error);
@@ -238,12 +236,13 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
       throw new AppError("User not found. Please login again.", 401);
     }
 
+    const wallet = await findWalletByUserId(user.id);
+
     res.json({
       success: true,
-      user: serializeUser(user),
+      user: serializeUser(user, wallet),
     });
   } catch (error) {
     next(error);
   }
 };
-
