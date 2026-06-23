@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "compile": "hardhat compile",
+    "deploy:localhost": "hardhat run scripts/deploySafeWallet.ts --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploySafeWallet.ts --network sepolia",
     "test": "hardhat test"
   },
   "dependencies": {
@@ -16,6 +18,7 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.18.8",
     "chai": "^4.5.0",
+    "dotenv": "^16.6.1",
     "hardhat": "^2.28.6",
     "mocha": "^10.8.2",
     "ts-node": "^10.9.2",
