@@ -8,8 +8,6 @@ export const ensureUsersTable = async () => {
       full_name VARCHAR(120) NOT NULL,
       email VARCHAR(160) NOT NULL UNIQUE,
       password TEXT NOT NULL,
-      public_key TEXT,
-      private_key TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
@@ -17,8 +15,8 @@ export const ensureUsersTable = async () => {
 
   await getPool().query(`
     ALTER TABLE users
-      ALTER COLUMN public_key DROP NOT NULL,
-      ALTER COLUMN private_key DROP NOT NULL
+      DROP COLUMN IF EXISTS public_key,
+      DROP COLUMN IF EXISTS private_key
   `);
 };
 
@@ -26,24 +24,16 @@ export const createUser = async (input: {
   full_name: string;
   email: string;
   passwordHash: string;
-  publicKey?: string | null;
-  privateKey?: string | null;
 }) => {
   await ensureUsersTable();
 
   const result = await getPool().query<UserRecord>(
     `
-      INSERT INTO users (full_name, email, password, public_key, private_key)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO users (full_name, email, password)
+      VALUES ($1, $2, $3)
       RETURNING *
     `,
-    [
-      input.full_name,
-      input.email,
-      input.passwordHash,
-      input.publicKey || null,
-      input.privateKey || null,
-    ],
+    [input.full_name, input.email, input.passwordHash],
   );
 
   return result.rows[0];
@@ -59,6 +49,7 @@ export const findUserByEmail = async (email: string) => {
 
   return result.rows[0] ?? null;
 };
+
 export const findUserById = async (id: string) => {
   await ensureUsersTable();
 
@@ -73,8 +64,6 @@ export const findUserById = async (id: string) => {
 export const updateUserRecoveryCredentials = async (input: {
   id: number;
   passwordHash: string;
-  publicKey: string;
-  privateKey: string;
 }) => {
   await ensureUsersTable();
 
@@ -82,13 +71,11 @@ export const updateUserRecoveryCredentials = async (input: {
     `
       UPDATE users
       SET password = $2,
-          public_key = $3,
-          private_key = $4,
           updated_at = NOW()
       WHERE id = $1
       RETURNING *
     `,
-    [input.id, input.passwordHash, input.publicKey, input.privateKey],
+    [input.id, input.passwordHash],
   );
 
   return result.rows[0] ?? null;
