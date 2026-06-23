@@ -1,14 +1,26 @@
-// 
-
 // src/services/authService.ts
 import { api } from "@/lib/api"
-import { encryptPrivateKey, generateWallet } from "@/lib/walletUtils"
+import {
+  encryptPrivateKey,
+  generateWallet,
+  recoverWalletFromMnemonic,
+} from "@/lib/walletUtils"
 
 export interface User {
   id: string
   full_name: string
   email: string
   publicKey?: string | null
+  walletAddress?: string | null
+}
+
+type WalletAuthPayload = {
+  full_name?: string
+  email: string
+  password: string
+  private_key: string
+  public_key: string
+  wallet_address: string
 }
 
 type AuthResponse = {
@@ -31,17 +43,23 @@ const getUserFromResponse = (response: AuthResponse | User): User | null => {
   return isUser(response) ? response : null
 }
 
-// Runtime auth state - never stored in localStorage
 let _isAuthenticated = false
 let _currentUser: User | null = null
 let _sessionChecked = false
 let _sessionCheckPromise: Promise<boolean> | null = null
-let _authListeners: Array<(isAuthenticated: boolean, user: User | null) => void> = []
+let _authListeners: Array<(
+  isAuthenticated: boolean,
+  user: User | null,
+) => void> = []
+
+const setAuthenticatedUser = (user: User) => {
+  _isAuthenticated = true
+  _currentUser = user
+  _sessionChecked = true
+  authService.notifyListeners()
+}
 
 export const authService = {
-  /**
-   * Initialize session - checks if user is authenticated
-   */
   async initializeSession(): Promise<boolean> {
     if (_sessionChecked) return _isAuthenticated
     if (_sessionCheckPromise) return _sessionCheckPromise
@@ -67,29 +85,22 @@ export const authService = {
     return _sessionCheckPromise
   },
 
-  /**
-   * Add auth state listener
-   */
-  addListener(listener: (isAuthenticated: boolean, user: User | null) => void): () => void {
+  addListener(
+    listener: (isAuthenticated: boolean, user: User | null) => void,
+  ): () => void {
     _authListeners.push(listener)
     listener(_isAuthenticated, _currentUser)
     return () => {
-      _authListeners = _authListeners.filter(l => l !== listener)
+      _authListeners = _authListeners.filter((item) => item !== listener)
     }
   },
 
-  /**
-   * Notify all listeners
-   */
   notifyListeners(): void {
-    _authListeners.forEach(listener => {
+    _authListeners.forEach((listener) => {
       listener(_isAuthenticated, _currentUser)
     })
   },
 
-  /**
-   * Get the current user profile
-   */
   async getCurrentUser(): Promise<User | null> {
     try {
       const response = await api.get<AuthResponse | User>("users/me")
@@ -98,19 +109,15 @@ export const authService = {
       if (user) {
         _isAuthenticated = true
         _currentUser = user
-        _sessionChecked = true
-        this.notifyListeners()
-      }
-
-      if (!user) {
+      } else {
         _isAuthenticated = false
         _currentUser = null
-        _sessionChecked = true
-        this.notifyListeners()
       }
 
+      _sessionChecked = true
+      this.notifyListeners()
       return user ?? null
-    } catch (err) {
+    } catch {
       _isAuthenticated = false
       _currentUser = null
       _sessionChecked = true
@@ -119,9 +126,6 @@ export const authService = {
     }
   },
 
-  /**
-   * Log in user
-   */
   async login(data: { email: string; password: string }): Promise<User> {
     const response = await api.post<AuthResponse>("users/login", data)
     const user = getUserFromResponse(response)
@@ -130,46 +134,69 @@ export const authService = {
       throw new Error("Login response did not include user")
     }
 
-    _isAuthenticated = true
-    _currentUser = user
-    _sessionChecked = true
-    this.notifyListeners()
-
+    setAuthenticatedUser(user)
     return user
   },
 
-  /**
-   * Sign up user — returns user + mnemonic for display
-   */
   async signup(data: {
     full_name: string
     email: string
     password: string
   }): Promise<{ user: User; mnemonic: string }> {
+    const wallet = await generateWallet()
+    const encryptedPrivateKey = await encryptPrivateKey(
+      wallet.privateKey,
+      data.password,
+    )
 
-    const wallet = await generateWallet();
-    const encryptedPrivateKey = await encryptPrivateKey(wallet.privateKey, data.password);
-    const response = await api.post<AuthResponse>("users/register", {
+    const payload: WalletAuthPayload = {
       ...data,
+      email: data.email.trim().toLowerCase(),
       private_key: encryptedPrivateKey,
       public_key: wallet.publicKey,
       wallet_address: wallet.address,
-    });
-    const user = getUserFromResponse(response);
+    }
 
-    if (!user) throw new Error("Signup response did not include user");
+    const response = await api.post<AuthResponse>("users/register", payload)
+    const user = getUserFromResponse(response)
 
-    _isAuthenticated = true;
-    _currentUser = user;
-    _sessionChecked = true;
-    this.notifyListeners();
+    if (!user) {
+      throw new Error("Signup response did not include user")
+    }
 
-    return { user, mnemonic: wallet.mnemonic ?? "" };
+    setAuthenticatedUser(user)
+    return { user, mnemonic: wallet.mnemonic ?? "" }
   },
 
-  /**
-   * Log out user
-   */
+  async recoverWithMnemonic(data: {
+    email: string
+    password: string
+    mnemonic: string
+  }): Promise<User> {
+    const wallet = await recoverWalletFromMnemonic(data.mnemonic)
+    const encryptedPrivateKey = await encryptPrivateKey(
+      wallet.privateKey,
+      data.password,
+    )
+
+    const payload: WalletAuthPayload = {
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+      private_key: encryptedPrivateKey,
+      public_key: wallet.publicKey,
+      wallet_address: wallet.address,
+    }
+
+    const response = await api.post<AuthResponse>("users/recover", payload)
+    const user = getUserFromResponse(response)
+
+    if (!user) {
+      throw new Error("Recovery response did not include user")
+    }
+
+    return user
+  },
+
   async logout(): Promise<void> {
     try {
       await api.post("users/logout")
@@ -200,8 +227,7 @@ export const authService = {
     _currentUser = null
     _sessionChecked = false
     this.notifyListeners()
-  }
+  },
 }
-
 
 

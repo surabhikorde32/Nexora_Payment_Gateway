@@ -38,3 +38,38 @@ export const createWallet = async (input: {
 
   return result.rows[0];
 };
+
+export const findWalletByUserId = async (userId: number) => {
+  await ensureWalletsTable();
+
+  const result = await getPool().query(
+    "SELECT * FROM wallets WHERE user_id = $1 LIMIT 1",
+    [userId],
+  );
+
+  return result.rows[0] ?? null;
+};
+
+export const updateWalletForUser = async (input: {
+  userId: number;
+  walletAddress: string;
+  publicKey: string;
+  privateKey: string;
+}) => {
+  await ensureWalletsTable();
+
+  const result = await getPool().query(
+    `
+      UPDATE wallets
+      SET wallet_address = $2,
+          public_key = $3,
+          private_key = $4,
+          updated_at = NOW()
+      WHERE user_id = $1
+      RETURNING *
+    `,
+    [input.userId, input.walletAddress, input.publicKey, input.privateKey],
+  );
+
+  return result.rows[0] ?? null;
+};

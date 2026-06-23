@@ -1,83 +1,114 @@
-import * as ethers from 'ethers';
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, Wallet } from "ethers"
 
-/**
- * Encrypt a private key using AES-GCM with the user's password.
- * Returns a base64 string: salt(16) + iv(12) + ciphertext
- */
-export const encryptPrivateKey = async (privateKey: string, password: string): Promise<string> => {
-  const enc = new TextEncoder();
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+type WalletLike = {
+  address: string
+  privateKey: string
+  signingKey: {
+    compressedPublicKey: string
+  }
+}
+
+type WalletPayload = {
+  address: string
+  privateKey: string
+  publicKey: string
+  mnemonic?: string
+}
+
+const KDF_ITERATIONS = 310_000
+
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  let binary = ""
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
+  return btoa(binary)
+}
+
+const normalizeMnemonic = (mnemonic: string): string =>
+  mnemonic.trim().toLowerCase().replace(/\s+/g, " ")
+
+export const encryptPrivateKey = async (
+  privateKey: string,
+  password: string,
+): Promise<string> => {
+  const encoder = new TextEncoder()
+  const salt = crypto.getRandomValues(new Uint8Array(16)) as Uint8Array<ArrayBuffer>
+  const iv = crypto.getRandomValues(new Uint8Array(12)) as Uint8Array<ArrayBuffer>
 
   const keyMaterial = await crypto.subtle.importKey(
-    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
-  );
-  const aesKey = await crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
     false,
-    ['encrypt']
-  );
+    ["deriveKey"],
+  )
+
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: KDF_ITERATIONS, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"],
+  )
 
   const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
+    { name: "AES-GCM", iv },
     aesKey,
-    enc.encode(privateKey)
-  );
+    encoder.encode(privateKey),
+  )
 
-  const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
-  combined.set(salt, 0);
-  combined.set(iv, salt.length);
-  combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
+  const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength)
+  combined.set(salt, 0)
+  combined.set(iv, salt.length)
+  combined.set(new Uint8Array(ciphertext), salt.length + iv.length)
 
-  return btoa(String.fromCharCode(...combined));
-};
+  return bytesToBase64(combined)
+}
 
-// Initialize provider
-let provider: JsonRpcProvider | null = null;
-const VITE_SEPOLIA_RPC_URL = import.meta.env.VITE_SEPOLIA_RPC_URL 
-/**
- * Initialize blockchain provider
- */
+let provider: JsonRpcProvider | null = null
+
 export const initializeProvider = () => {
-  try {
-    provider = new ethers.JsonRpcProvider(VITE_SEPOLIA_RPC_URL);
-    return provider;
-  } catch (error) {
-    console.error('Failed to initialize provider:', error);
-    throw new Error('Blockchain provider initialization failed');
+  const rpcUrl = import.meta.env.VITE_SEPOLIA_RPC_URL ?? import.meta.env.VITE_RPC_URL
+
+  if (!rpcUrl) {
+    throw new Error("VITE_SEPOLIA_RPC_URL or VITE_RPC_URL is missing")
   }
-};
 
-/**
- * Generate a new wallet
- */
-export const generateWallet = async () => {
-  try {
-    // Initialize provider if not already done
-    if (!provider) {
-      initializeProvider();
-    }
+  provider = new JsonRpcProvider(rpcUrl)
+  return provider
+}
 
-    // Create random wallet
-    const wallet = ethers.Wallet.createRandom();
-    
-    const connectedWallet = wallet.connect(provider!);
+const getProvider = () => provider ?? initializeProvider()
 
-    
-    return {
-      address: wallet.address,
-      privateKey: wallet.privateKey,
-      publicKey: wallet.publicKey,
-      mnemonic: wallet.mnemonic?.phrase,
-  
-    };
-  } catch (error) {
-    console.error('Failed to generate wallet:', error);
-    throw new Error('Wallet generation failed');
+const serializeWallet = (wallet: WalletLike, mnemonic?: string): WalletPayload => ({
+  address: wallet.address,
+  privateKey: wallet.privateKey,
+  publicKey: wallet.signingKey.compressedPublicKey,
+  mnemonic,
+})
+
+export const generateWallet = async (): Promise<WalletPayload> => {
+  const wallet = Wallet.createRandom().connect(getProvider())
+
+  return serializeWallet(wallet, wallet.mnemonic?.phrase)
+}
+
+export const recoverWalletFromMnemonic = async (
+  mnemonic: string,
+): Promise<WalletPayload> => {
+  const normalizedMnemonic = normalizeMnemonic(mnemonic)
+  const words = normalizedMnemonic.split(" ")
+
+  if (words.length !== 12) {
+    throw new Error("Recovery phrase must contain exactly 12 words")
   }
-};
 
+  try {
+    const wallet = Wallet.fromPhrase(normalizedMnemonic).connect(getProvider())
+    return serializeWallet(wallet)
+  } catch {
+    throw new Error("Invalid recovery phrase")
+  }
+}
 

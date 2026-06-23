@@ -69,3 +69,27 @@ export const findUserById = async (id: string) => {
 
   return result.rows[0] ?? null;
 };
+
+export const updateUserRecoveryCredentials = async (input: {
+  id: number;
+  passwordHash: string;
+  publicKey: string;
+  privateKey: string;
+}) => {
+  await ensureUsersTable();
+
+  const result = await getPool().query<UserRecord>(
+    `
+      UPDATE users
+      SET password = $2,
+          public_key = $3,
+          private_key = $4,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [input.id, input.passwordHash, input.publicKey, input.privateKey],
+  );
+
+  return result.rows[0] ?? null;
+};
