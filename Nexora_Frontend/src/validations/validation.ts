@@ -50,6 +50,18 @@ export const RecoverPasswordSchema = Yup.object().shape({
     ),
 })
 
+export const SendSchema = Yup.object().shape({
+  toAddress: Yup.string()
+    .required("Recipient address is required")
+    .matches(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address (0x...)"),
+  amount: Yup.number()
+    .typeError("Amount must be a number")
+    .required("Amount is required")
+    .positive("Amount must be greater than 0")
+    .max(100, "Amount cannot exceed 100 ETH per transaction"),
+  note: Yup.string().max(100, "Note must be less than 100 characters"),
+})
+
 export const LoginSchema = Yup.object().shape({
     email: Yup.string()
     .required("Email is required")
