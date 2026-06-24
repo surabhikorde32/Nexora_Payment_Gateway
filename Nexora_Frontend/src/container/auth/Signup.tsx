@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   Copy,
   CheckCheck,
+  Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -42,13 +43,17 @@ export function Signup() {
   const [showPassword, setShowPassword] = React.useState(false)
   const [step, setStep] = React.useState<Step>("form")
   const [mnemonic, setMnemonic] = React.useState("")
+  const [recoveryUserName, setRecoveryUserName] = React.useState("")
+  const [recoveryWalletAddress, setRecoveryWalletAddress] = React.useState("")
   const [copied, setCopied] = React.useState(false)
 
   const signupMutation = useMutation({
     mutationFn: (payload: Omit<SignupFormValues, "terms">) =>
       authService.signup(payload),
-    onSuccess: ({ mnemonic: phrase }) => {
+    onSuccess: ({ mnemonic: phrase, user }) => {
       setMnemonic(phrase)
+      setRecoveryUserName(user.full_name)
+      setRecoveryWalletAddress(user.walletAddress ?? "")
       setStep("mnemonic")
     },
     onError: () => {},
@@ -63,6 +68,34 @@ export function Signup() {
     navigator.clipboard.writeText(mnemonic)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleDownloadPhrase = () => {
+    const fileContent = [
+      "Nexora Wallet Recovery Details",
+      "",
+      `User Name: ${recoveryUserName || "N/A"}`,
+      `Wallet Address: ${recoveryWalletAddress || "N/A"}`,
+      "",
+      "Recovery Phrase:",
+      mnemonic,
+      "",
+      "Keep this file private. Anyone with this recovery phrase can restore your wallet.",
+    ].join("\n")
+
+    const blob = new Blob([fileContent], { type: "text/plain;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    const safeName = (recoveryUserName || "nexora-wallet")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+
+    link.href = url
+    link.download = `${safeName || "nexora-wallet"}-recovery-phrase.txt`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleMnemonicConfirm = () => {
@@ -134,15 +167,26 @@ export function Signup() {
                     </div>
                   ))}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCopy}
-                  className="flex items-center gap-2 border-neutral-700 text-neutral-300 hover:text-white"
-                >
-                  {copied ? <CheckCheck className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                  {copied ? "Copied!" : "Copy to clipboard"}
-                </Button>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCopy}
+                    className="flex items-center gap-2 border-neutral-700 text-neutral-300 hover:text-white"
+                  >
+                    {copied ? <CheckCheck className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                    {copied ? "Copied!" : "Copy"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDownloadPhrase}
+                    className="flex items-center gap-2 border-neutral-700 text-neutral-300 hover:text-white"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
                 <Button
                   type="button"
                   onClick={handleMnemonicConfirm}
@@ -367,4 +411,8 @@ export function Signup() {
     </div>
   )
 }
+
+
+
+
 
