@@ -1,28 +1,3 @@
-// import {
-//   BrowserRouter,
-//   Routes as RouterRoutes,
-//   Route,
-//   Navigate,
-// } from "react-router-dom"
-// import { Signup } from "@/container/auth/Signup"
-// import { Login } from "@/container/auth/Login"
-// import { Dashboard } from "@/container/pages/Dashboard"
-
-// export function Routes() {
-//   return (
-//     <BrowserRouter>
-//       <RouterRoutes>
-//         <Route path="/signup" element={<Signup />} />
-//         <Route path="/login" element={<Login />} />
-//         <Route path="/dashboard" element={<Dashboard />} />
-//         <Route path="*" element={<Navigate to="/signup" replace />} />
-//       </RouterRoutes>
-//     </BrowserRouter>
-//   )
-// }
-
-// export default Routes
-
 import {
   BrowserRouter,
   Routes as RouterRoutes,
@@ -31,8 +6,9 @@ import {
 } from "react-router-dom"
 import { Signup } from "@/container/auth/Signup"
 import { Login } from "@/container/auth/Login"
-import { Dashboard } from "@/container/pages/Dashboard"
 import { RecoverPassword } from "@/container/auth/RecoverPassword"
+import { Dashboard } from "@/container/pages/Dashboard"
+import { Profile } from "@/container/pages/Profile"
 import { Layout } from "@/components/layout/Layout"
 
 export function Routes() {
@@ -45,6 +21,7 @@ export function Routes() {
 
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/signup" replace />} />
