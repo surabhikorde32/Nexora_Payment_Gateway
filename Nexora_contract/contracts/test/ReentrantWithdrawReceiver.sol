@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {NexoraSafeWallet} from "../NexoraSafeWallet.sol";
+import {NexoraSafeWallet} from "../NexoraWalletSystem.sol";
 
 contract ReentrantWithdrawReceiver {
     NexoraSafeWallet public immutable wallet;
