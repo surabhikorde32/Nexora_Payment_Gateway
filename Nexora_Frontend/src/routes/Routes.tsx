@@ -1,3 +1,5 @@
+
+
 import {
   BrowserRouter,
   Routes as RouterRoutes,
@@ -6,10 +8,12 @@ import {
 } from "react-router-dom"
 import { Signup } from "@/container/auth/Signup"
 import { Login } from "@/container/auth/Login"
-import { RecoverPassword } from "@/container/auth/RecoverPassword"
 import { Dashboard } from "@/container/pages/Dashboard"
-import { Profile } from "@/container/pages/Profile"
+import { RecoverPassword } from "@/container/auth/RecoverPassword"
 import { Layout } from "@/components/layout/Layout"
+import { SendPage } from "@/container/pages/Send"
+import { TransactionsPage } from "@/container/pages/Transactions"
+import { Profile } from "@/container/pages/Profile"
 
 export function Routes() {
   return (
@@ -21,7 +25,9 @@ export function Routes() {
 
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/send" element={<SendPage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
+           <Route path="/profile" element={<Profile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/signup" replace />} />
